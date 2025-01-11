@@ -1,101 +1,196 @@
-import Image from "next/image";
+"use client"; // For Next.js App Router
+import { useEffect, useRef, useState } from "react";
+import CodeEditor from "./components/editor";
 
-export default function Home() {
+export default function PythonEditor() {
+  const [key, setKey] = useState(0); // Key to force re-render
+  const [code, setCode] = useState();
+  const [loading, setLoading] = useState(false);
+  const [testResults, setTestResults] = useState([]);
+  const [syntaxError, setSyntaxError] = useState("");
+  const [id, setId] = useState("1");
+  const [result, setResult] = useState();
+
+  
+
+  // const challengeDescription = `Debug the following Python function. It should return the sum of two numbers, but it currently contains errors. Fix the errors to make it work correctly.`;
+
+  useEffect(() => {
+    const getCodeFromApi = async () => {
+      setLoading(true)
+      try {
+        // const response = await fetch(`http://127.0.0.1:8000/code/get_code?id=${id}`, {
+        const response = await fetch(`https://python-debugger-fastapi.onrender.com/code/get_code?id=${id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          }        
+        });
+
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+
+        setResult( await response.json());
+      } catch (err) {
+        console.log(err);
+      }
+      setLoading(false)
+    };
+
+    getCodeFromApi(); // Call the function to execute it
+  }, [id]); // This will trigger when 'id' or 'code' changes
+
+  useEffect(()=>{
+    setCode(result?.code); // Store the result in state
+    
+  }, [result])
+  // const editorRef = useRef(null);
+
+  // const functionDefinition = "def add_numbers(a, b):"; // Keep this dynamic as needed.
+  
+
+
+
+  const runCode = async () => {
+    setLoading(true);
+    setTestResults([]);
+    setSyntaxError("");
+
+    // Syntax validation
+    try {
+      const syntax = await fetch("/api/run", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({code} ),
+      });
+      const syntaxResult = await syntax.json();
+
+      if (syntaxResult.error) {
+        setSyntaxError(syntaxResult.error);
+        return;
+      }
+
+      // Test code execution
+      const testCasesFormatted = [
+        { input: "add_numbers(2, 3)", expected: 5 },
+        { input: "add_numbers(-1, 4)", expected: 3 },
+        { input: "add_numbers(0, 0)", expected: 0 },
+      ];
+
+      // const response = await fetch("http://127.0.0.1:8000/test/test_code", {
+      const response = await fetch("https://python-debugger-fastapi.onrender.com/test/test_code", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code, test_cases: result?.test_cases }),
+      });
+
+      const output = await response.json();
+      setTestResults(output.results);
+    } catch (error) {
+      console.log(error)
+      setSyntaxError("Error: Unable to process the code.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetCode = () => {
+    setCode(
+      result?.code
+    );
+    setSyntaxError("");
+    setTestResults([]);
+    setKey((prevKey) => prevKey + 1); // Update key to remount CodeEditor
+
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black text-gray-100 p-6 transition-all duration-500">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="flex flex-col space-y-6">
+          <h1 className="text-4xl font-extrabold text-center text-gradient mb-6">
+            Start Debugging
+          </h1>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          {/* <div className="p-6 rounded-xl bg-opacity-90 bg-gray-800">
+            <p className="text-base lg:text-lg text-gray-300">{challengeDescription}</p>
+          </div> */}
+
+          <div className={syntaxError?"output-container bg-red-600 text-white p-4 rounded-xl shadow-lg mb-6":""}>
+            {syntaxError && (
+              <>
+                <h2 className="text-lg font-semibold mb-2">Syntax Error:</h2>
+                <p>{syntaxError}</p>
+              </>
+            )}
+
+            {!syntaxError && testResults.length > 0 && (
+              <>
+                <h2 className="text-lg font-semibold mb-2">Test Results:</h2>
+                <ul className="list-disc pl-6">
+                  {testResults.map((result, index) => (
+                    <li
+                      key={index}
+                      className={`${
+                        result.status === "Passed"
+                          ? "text-green-100"
+                          : "text-red-100"
+                      }`}
+                    >
+                      <strong>Test Case {result.test_case}:</strong>{" "}
+                      {result.status === "Passed" ? (
+                        <span className="ml-2">Passed - Result: {result.result}</span>
+                      ) : (
+                        <span className="ml-2 text-red-200">
+                          Failed - Expected: {result.expected}, Got:{" "}
+                          {result.got}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+
+          <div className="bg-gray-800 p-6 rounded-xl shadow-lg mt-6 bg-opacity-90">
+            <h2 className="text-lg font-semibold mb-2 text-white">Hint:💡</h2>
+            <pre className="text-gray-300 whitespace-pre-wrap break-words">{result?.hint}</pre>
+          </div>
+
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <div className="">
+          <div className="flex-1 justify-start">
+            <CodeEditor  definition={result?.code.split('\n')[0]} code={code} setCode={setCode} key={key} />
+          </div>
+
+          <div className="buttons-container flex justify-between mt-4 p-4">
+            <button
+              onClick={runCode}
+              disabled={loading}
+              className={`px-6 py-3 font-semibold rounded-lg transition-all duration-300 ${
+                loading
+                  ? "bg-gray-700 cursor-not-allowed"
+                  : "bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-500"
+              }`}
+            >
+              {loading ? "Running..." : "Run Code"}
+            </button>
+            <button
+              onClick={resetCode}
+              className="px-6 py-3 font-semibold bg-gray-700 text-white rounded-lg transition-all duration-300 hover:bg-gray-600"
+            >
+              Reset Code
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
