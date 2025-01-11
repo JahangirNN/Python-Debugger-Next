@@ -1,6 +1,8 @@
 "use client"; // For Next.js App Router
 import { useEffect, useRef, useState } from "react";
 import CodeEditor from "./components/editor";
+import ButtonWithTimer from "./components/nextButton";
+import CountdownWithSkip from "./components/nextButton";
 
 export default function PythonEditor() {
   const [key, setKey] = useState(0); // Key to force re-render
@@ -10,6 +12,7 @@ export default function PythonEditor() {
   const [syntaxError, setSyntaxError] = useState("");
   const [id, setId] = useState("1");
   const [result, setResult] = useState();
+  const [solved, setSolved] = useState(false);
 
   
 
@@ -30,8 +33,8 @@ export default function PythonEditor() {
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
-
         setResult( await response.json());
+        setKey((prevKey) => prevKey + 1); // Update key to remount CodeEditor
       } catch (err) {
         console.log(err);
       }
@@ -91,6 +94,9 @@ export default function PythonEditor() {
 
       const output = await response.json();
       setTestResults(output.results);
+      output.results.forEach(element => {
+        setSolved(element.status == 'Failed'? false : true)
+      });
     } catch (error) {
       console.log(error)
       setSyntaxError("Error: Unable to process the code.");
@@ -108,83 +114,106 @@ export default function PythonEditor() {
     setKey((prevKey) => prevKey + 1); // Update key to remount CodeEditor
 
   };
+  const handleComplete = () => {
+    console.log("Countdown complete or skipped!");
+    setTestResults([]);
+    setSyntaxError("");
+    setSolved(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black text-gray-100 p-6 transition-all duration-500">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="flex flex-col space-y-6">
-          <h1 className="text-4xl font-extrabold text-center text-gradient mb-6">
-            Start Debugging
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
+        {/* Left Section */}
+        <div className="flex flex-col space-y-8">
+          <h1 className="text-5xl font-extrabold text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-600">
+            Start Debugging 
           </h1>
+  
 
-          {/* <div className="p-6 rounded-xl bg-opacity-90 bg-gray-800">
-            <p className="text-base lg:text-lg text-gray-300">{challengeDescription}</p>
-          </div> */}
+          {syntaxError && (
+            <div className="bg-red-600 text-white p-6 rounded-xl shadow-lg space-y-4">
+              <h2 className="text-xl font-bold">Syntax Error:</h2>
+              <p>{syntaxError}</p>
+            </div>
+          )}
+  
+          {!syntaxError && testResults.length > 0 && (
+            <div className="bg-gray-800 p-6 rounded-xl shadow-lg space-y-4 bg-opacity-90">
+              <h2 className="text-xl font-bold text-white">Test Results:</h2>
+              <ul className="list-disc pl-6 text-gray-300 space-y-2">
+                {testResults.map((result, index) => (
+                  <li
+                    key={index}
+                    className={`${
+                      result.status === "Passed"
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }`}
+                  >
+                    <strong>Test Case {result.test_case}:</strong>{" "}
+                    {result.status === "Passed" ? (
+                      <span>Passed - Result: {result.result}</span>
+                      
+                    ) : (
+                      <span>                        
+                        Failed - Expected: {result.expected}, Got: {result.got}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {solved? 
+          <CountdownWithSkip onComplete={handleComplete} setId={setId}/>:
+            <>
+              <div className="bg-gray-800 p-6 rounded-xl shadow-lg bg-opacity-90">
+                <h2 className="text-xl font-semibold text-white mb-2">Hint: 💡</h2>
+                <pre className="text-gray-300 whitespace-pre-wrap break-words">
+                  {result?.hint}
+                </pre>
+              </div>
+              <div className="p-4 rounded-xl bg-opacity-90 bg-gray-800 shadow-lg">
+                <h5 className="text-2xl font-extrabold text-gray-100 tracking-wide">
+                  STREAK 🚀: <span className="text-green-400 text-3xl">{parseInt(id) - 1}</span>
+                </h5>
+              </div>
 
-          <div className={syntaxError?"output-container bg-red-600 text-white p-4 rounded-xl shadow-lg mb-6":""}>
-            {syntaxError && (
-              <>
-                <h2 className="text-lg font-semibold mb-2">Syntax Error:</h2>
-                <p>{syntaxError}</p>
-              </>
-            )}
-
-            {!syntaxError && testResults.length > 0 && (
-              <>
-                <h2 className="text-lg font-semibold mb-2">Test Results:</h2>
-                <ul className="list-disc pl-6">
-                  {testResults.map((result, index) => (
-                    <li
-                      key={index}
-                      className={`${
-                        result.status === "Passed"
-                          ? "text-green-100"
-                          : "text-red-100"
-                      }`}
-                    >
-                      <strong>Test Case {result.test_case}:</strong>{" "}
-                      {result.status === "Passed" ? (
-                        <span className="ml-2">Passed - Result: {result.result}</span>
-                      ) : (
-                        <span className="ml-2 text-red-200">
-                          Failed - Expected: {result.expected}, Got:{" "}
-                          {result.got}
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </div>
-
-          <div className="bg-gray-800 p-6 rounded-xl shadow-lg mt-6 bg-opacity-90">
-            <h2 className="text-lg font-semibold mb-2 text-white">Hint:💡</h2>
-            <pre className="text-gray-300 whitespace-pre-wrap break-words">{result?.hint}</pre>
-          </div>
-
+            </>
+          }
+          {/* <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black text-gray-100 flex items-center justify-center"> */}
+            {/* <CountdownWithSkip onComplete={handleComplete} /> */}
+          {/* </div> */}
+  
         </div>
-
-        <div className="">
-          <div className="flex-1 justify-start">
-            <CodeEditor  definition={result?.code.split('\n')[0]} code={code} setCode={setCode} key={key} />
+  
+        {/* Right Section */}
+        <div className="flex flex-col space-y-6">
+          <div className="flex-1">
+            <CodeEditor
+              definition={result?.code.split("\n")[0]}
+              code={code}
+              setCode={setCode}
+              key={key}
+            />
           </div>
-
-          <div className="buttons-container flex justify-between mt-4 p-4">
+  
+          <div className="flex justify-between mt-4 space-x-4">
             <button
               onClick={runCode}
               disabled={loading}
-              className={`px-6 py-3 font-semibold rounded-lg transition-all duration-300 ${
+              className={`w-full py-3 font-semibold rounded-lg transition-all duration-300 ${
                 loading
                   ? "bg-gray-700 cursor-not-allowed"
-                  : "bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-500"
+                  : "bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-500"
               }`}
             >
               {loading ? "Running..." : "Run Code"}
             </button>
             <button
               onClick={resetCode}
-              className="px-6 py-3 font-semibold bg-gray-700 text-white rounded-lg transition-all duration-300 hover:bg-gray-600"
+              className="w-full py-3 font-semibold bg-gray-700 text-white rounded-lg transition-all duration-300 hover:bg-gray-600"
             >
               Reset Code
             </button>
@@ -193,4 +222,5 @@ export default function PythonEditor() {
       </div>
     </div>
   );
+  
 }

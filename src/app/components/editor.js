@@ -122,10 +122,10 @@ const CodeEditor = ({ definition, code, setCode }) => {
         theme="vs-dark"
         onMount={onEditorMount}
         options={{
-          fontSize: 16,
+          fontSize: 15,
           scrollBeyondLastLine: false,
           cursorSmoothCaretAnimation: true,
-          glyphMargin: true,
+          // glyphMargin: true,
           wordWrap: "on",
           minimap: {
             enabled: false,
