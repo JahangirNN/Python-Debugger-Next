@@ -115,14 +115,14 @@ const CodeEditor = ({ definition, code, setCode }) => {
       `}</style>
 
       <Editor
-        height="450px"
+        height="500px"
         defaultLanguage="python"
         value={code}
         onChange={(value) => setCode(value || "")}
         theme="vs-dark"
         onMount={onEditorMount}
         options={{
-          fontSize: 15,
+          fontSize: 18,
           scrollBeyondLastLine: false,
           cursorSmoothCaretAnimation: true,
           // glyphMargin: true,

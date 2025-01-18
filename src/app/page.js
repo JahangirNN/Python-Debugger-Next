@@ -10,6 +10,7 @@ export default function PythonEditor() {
   const [loading, setLoading] = useState(false);
   const [testResults, setTestResults] = useState([]);
   const [syntaxError, setSyntaxError] = useState("");
+  const [codeOutput, setCodeOutput] = useState("");
   const [id, setId] = useState("1");
   const [result, setResult] = useState();
   const [solved, setSolved] = useState(false);
@@ -59,10 +60,12 @@ export default function PythonEditor() {
     setLoading(true);
     setTestResults([]);
     setSyntaxError("");
+    setCodeOutput("");
 
     // Syntax validation
     try {
-      const syntax = await fetch("/api/run", {
+      // const syntax = await fetch("/api/run", {
+      const syntax = await fetch("https://python-debugger-fastapi.onrender.com/run/run_code", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -70,10 +73,12 @@ export default function PythonEditor() {
         body: JSON.stringify({code} ),
       });
       const syntaxResult = await syntax.json();
-
+      console.log(syntaxResult)
       if (syntaxResult.error) {
         setSyntaxError(syntaxResult.error);
         return;
+      }else{
+        setCodeOutput(syntaxResult.output);
       }
 
       // Test code execution
@@ -94,12 +99,13 @@ export default function PythonEditor() {
 
       const output = await response.json();
       setTestResults(output.results);
+      console.log(output)
       output.results.forEach(element => {
         setSolved(element.status == 'Failed'? false : true)
       });
     } catch (error) {
       console.log(error)
-      setSyntaxError("Error: Unable to process the code.");
+      setSyntaxError("Error: Unable to process the code." + error);
     } finally {
       setLoading(false);
     }
@@ -110,6 +116,7 @@ export default function PythonEditor() {
       result?.code
     );
     setSyntaxError("");
+    setCodeOutput("");
     setTestResults([]);
     setKey((prevKey) => prevKey + 1); // Update key to remount CodeEditor
 
@@ -118,25 +125,37 @@ export default function PythonEditor() {
     console.log("Countdown complete or skipped!");
     setTestResults([]);
     setSyntaxError("");
+    setCodeOutput("");
     setSolved(false);
+    setId((prev) => parseInt(prev) + 1)
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black text-gray-100 p-6 transition-all duration-500">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
-        {/* Left Section */}
+  <div className="max-w-full lg:max-w-[90vw] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
+{/* Left Section */}
         <div className="flex flex-col space-y-8">
-          <h1 className="text-5xl font-extrabold text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-600">
+          <h1 className="text-6xl font-extrabold text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-600">
             Start Debugging 
           </h1>
   
 
           {syntaxError && (
-            <div className="bg-red-600 text-white p-6 rounded-xl shadow-lg space-y-4">
-              <h2 className="text-xl font-bold">Syntax Error:</h2>
-              <p>{syntaxError}</p>
-            </div>
-          )}
+              <div className="bg-gradient-to-r from-red-500 via-red-400 to-red-600 text-white p-4 rounded-lg shadow-md space-y-2 border border-red-500">
+                <h2 className="text-lg font-semibold tracking-wide">⚠️ Syntax Error</h2>
+                <p className="text-sm leading-relaxed">{syntaxError}</p>
+              </div>
+            )}
+            {codeOutput && (
+              <div className="bg-gradient-to-r from-gray-800 via-gray-900 to-black text-white p-4 rounded-lg shadow-md space-y-2 border border-gray-700">
+                <h2 className="text-lg font-semibold tracking-wide">🚀 Output</h2>
+                <pre className="bg-gray-900 text-green-400 p-3 rounded-md overflow-auto shadow-inner max-h-32 text-sm">
+                  {codeOutput}
+                </pre>
+              </div>
+            )}
+
+
   
           {!syntaxError && testResults.length > 0 && (
             <div className="bg-gray-800 p-6 rounded-xl shadow-lg space-y-4 bg-opacity-90">
@@ -189,7 +208,7 @@ export default function PythonEditor() {
         </div>
   
         {/* Right Section */}
-        <div className="flex flex-col space-y-6">
+        <div className="flex flex-col space-y-4">
           <div className="flex-1">
             <CodeEditor
               definition={result?.code.split("\n")[0]}
