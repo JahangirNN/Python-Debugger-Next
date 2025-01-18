@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 
 const CountdownWithPauseAndSkip = ({ onComplete, setId }) => {
-  const [timeLeft, setTimeLeft] = useState(15); // Countdown time in seconds
+  const [timeLeft, setTimeLeft] = useState(5); // Countdown time in seconds
   const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     if (timeLeft <= 0) {
       onComplete();
+      setId((prev) => parseInt(prev) + 1)
       return;
     }
 

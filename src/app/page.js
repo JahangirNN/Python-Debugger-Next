@@ -14,7 +14,7 @@ export default function PythonEditor() {
   const [id, setId] = useState("1");
   const [result, setResult] = useState();
   const [solved, setSolved] = useState(false);
-
+  const [streak, setStreak] = useState(0);
   
 
   // const challengeDescription = `Debug the following Python function. It should return the sum of two numbers, but it currently contains errors. Fix the errors to make it work correctly.`;
@@ -127,7 +127,7 @@ export default function PythonEditor() {
     setSyntaxError("");
     setCodeOutput("");
     setSolved(false);
-    setId((prev) => parseInt(prev) + 1)
+    setStreak(prev => prev+1)
   };
 
   return (
@@ -195,7 +195,7 @@ export default function PythonEditor() {
               </div>
               <div className="p-4 rounded-xl bg-opacity-90 bg-gray-800 shadow-lg">
                 <h5 className="text-2xl font-extrabold text-gray-100 tracking-wide">
-                  STREAK 🚀: <span className="text-green-400 text-3xl">{parseInt(id) - 1}</span>
+                  STREAK 🚀: <span className="text-green-400 text-3xl">{streak}</span>
                 </h5>
               </div>
 
